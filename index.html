@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Basic responsive setup, good for all devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyCast - Cognifyz Internship</title>
+    <!-- Tailwind CSS for quick styling, makes things responsive too -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Embedded CSS styles -->
+    <style>
+        /* Just some custom bits to make it look nice */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f4f8; /* Light background by default */
+            display: flex;
+            flex-direction: column; /* Stack sections vertically */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 0; /* Give some breathing room top/bottom */
+            transition: background-color 0.3s ease-in-out; /* Smooth theme change */
+        }
+        .weather-card, .contact-card {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Rounded corners, because they look better */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            margin-bottom: 2rem; /* Space between the weather and contact sections */
+            transition: all 0.3s ease-in-out; /* Smooth theme change */
+        }
+        .weather-card:hover, .contact-card:hover {
+            transform: translateY(-5px); /* Little lift on hover */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        .btn-primary {
+            background-image: linear-gradient(to right, #6366f1, #8b5cf6); /* Fancy gradient button */
+            transition: background-color 0.3s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn-primary:hover {
+            background-image: linear-gradient(to right, #4f46e5, #7c3aed); /* Darker gradient on hover */
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: translateY(0); /* Push down slightly on click */
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25); /* Nice focus ring */
+        }
+        .error-message {
+            color: #ef4444; /* Red for errors, obviously */
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .weather-icon-emoji {
+            font-size: 5rem; /* Big emoji for weather */
+            margin-bottom: 1rem;
+            display: block;
+            text-align: center;
+        }
+        .loading-indicator {
+            margin-top: 1rem;
+            font-size: 1.125rem;
+            color: #6366f1; /* Loading text color */
+            font-weight: 500;
+        }
+
+        /* Dark Theme Styles - for when you prefer the dark side */
+        body.dark-theme {
+            background-color: #2d3748; /* Dark background */
+            color: #e2e8f0; /* Light text */
+        }
+        body.dark-theme .weather-card, body.dark-theme .contact-card {
+            background-color: #4a5568; /* Darker card background */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        body.dark-theme .weather-card:hover, body.dark-theme .contact-card:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+        body.dark-theme h1, body.dark-theme h2, body.dark-theme .contact-form-title {
+            color: #e2e8f0; /* Light headings */
+        }
+        body.dark-theme p {
+            color: #cbd5e0; /* Lighter paragraphs */
+        }
+        body.dark-theme .text-indigo-600 { /* For dynamic city name, make it pop */
+            color: #9f7aea;
+        }
+        body.dark-theme .input-field {
+            background-color: #2d3748;
+            border-color: #6366f1;
+            color: #e2e8f0;
+        }
+        body.dark-theme .weather-display {
+            background-color: #2d3748;
+            border-color: #6366f1;
+            color: #e2e8f0;
+        }
+        body.dark-theme .text-gray-900 {
+            color: #e2e8f0;
+        }
+        body.dark-theme .text-gray-700 {
+            color: #cbd5e0;
+        }
+        body.dark-theme .text-gray-600 {
+            color: #a0aec0;
+        }
+        body.dark-theme .text-gray-500 {
+            color: #718096;
+        }
+
+        /* Responsive stuff - makes it look good on phones too */
+        @media (min-width: 640px) { /* For screens wider than 640px */
+            .weather-card, .contact-card {
+                padding: 3rem;
+            }
+        }
+
+        /* Theme Toggle Switch Specific Styles */
+        .theme-switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1.5rem; /* Space from elements above */
+            cursor: pointer;
+            user-select: none; /* Prevent text selection */
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px; /* Width of the toggle switch */
+            height: 34px; /* Height of the toggle switch */
+            background-color: #ccc; /* Light theme track color */
+            border-radius: 34px; /* Makes it oval */
+            transition: background-color 0.3s;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2); /* Inner shadow for depth */
+        }
+
+        .theme-switch-thumb {
+            position: absolute;
+            content: "";
+            height: 26px; /* Height of the circular thumb */
+            width: 26px; /* Width of the circular thumb */
+            left: 4px; /* Initial position from left */
+            bottom: 4px; /* Initial position from bottom */
+            background-color: white; /* Thumb color */
+            border-radius: 50%; /* Makes it a circle */
+            transition: transform 0.3s; /* Smooth sliding transition */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Thumb shadow */
+        }
+
+        /* Styles when dark theme is active */
+        body.dark-theme .theme-switch {
+            background-color: #6366f1; /* Dark theme track color (indigo) */
+        }
+
+        body.dark-theme .theme-switch-thumb {
+            transform: translateX(26px); /* Slide thumb to the right (60px - 26px - 4px*2 = 26px) */
+        }
+
+        .theme-switch-label {
+            margin-left: 0.75rem; /* Space between switch and label */
+            font-weight: 500;
+            color: #4a5568; /* Default label color */
+            transition: color 0.3s ease-in-out;
+        }
+
+        body.dark-theme .theme-switch-label {
+            color: #e2e8f0; /* Dark theme label color */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+
+    <div id="weather-app" class="weather-card">
+        <!-- Task 1: Basic HTML Page - Main heading and intro text -->
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-4">
+            SkyCast
+        </h1>
+        <p class="text-gray-600 mb-6">
+            Your go-to for real-time weather updates.
+        </p>
+        <!-- Weather emoji, changes based on condition. Part of Task 1's "image" requirement -->
+        <div id="weather-icon-display" class="weather-icon-emoji">
+            &#x1F324; <!-- Default: sun behind cloud -->
+        </div>
+
+        <!-- Task 6: Form Styling and Validation - The city input form -->
+        <form id="city-form" class="mb-8">
+            <div class="mb-4">
+                <label for="city-input" class="sr-only">Enter City Name</label>
+                <input
+                    type="text"
+                    id="city-input"
+                    placeholder="Enter city name (e.g., London)"
+                    class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                    aria-label="City Name Input"
+                >
+                <p id="city-error" class="error-message text-left hidden">Oops! Please type a city name.</p>
+            </div>
+            <!-- Task 4: Interactive Button - This button fetches the weather -->
+            <button
+                type="submit"
+                id="get-weather-btn"
+                class="btn-primary w-full text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-indigo-300"
+            >
+                Get Weather
+            </button>
+        </form>
+
+        <!-- Loading message, shows when fetching data -->
+        <div id="loading-indicator" class="loading-indicator hidden">
+            Just a sec, fetching weather...
+        </div>
+
+        <!-- Where the weather info shows up -->
+        <div id="weather-display" class="text-left text-gray-700 mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-2">Weather in <span id="display-city" class="text-indigo-600"></span></h2>
+            <p class="text-5xl font-bold text-gray-900 mb-2"><span id="display-temp" class="font-medium"></span></p>
+            <p class="text-xl text-gray-700 mb-1">Condition: <span id="display-condition" class="font-medium"></span></p>
+            <p class="text-xl text-gray-700 mb-1">Feels like: <span id="display-feelslike" class="font-medium"></span></p>
+            <p class="text-xl text-gray-700 mb-1">Humidity: <span id="display-humidity" class="font-medium"></span></p>
+            <p class="text-xl text-gray-700">Wind: <span id="display-wind" class="font-medium"></span></p>
+            <p class="text-xl text-gray-700">Pressure: <span id="display-pressure" class="font-medium"></span></p>
+        </div>
+
+        <!-- Theme toggle switch, changes light/dark mode -->
+        <div id="theme-toggle-container" class="theme-switch-container">
+            <label class="theme-switch">
+                <span class="theme-switch-thumb"></span>
+            </label>
+            <span class="theme-switch-label">Toggle Theme</span>
+        </div>
+    </div>
+
+    <!-- Contact Form Section - for reaching out -->
+    <div id="contact-form-section" class="contact-card">
+        <h2 class="contact-form-title text-2xl font-bold text-gray-800 mb-6 flex items-center justify-center">
+            <span class="text-3xl mr-3">&#x1F4EB;</span> Contact Form
+        </h2>
+        <form id="contact-form" class="text-left">
+            <div class="mb-4"> <!-- This mb-4 helps stack elements -->
+                <label for="contact-name" class="sr-only">Your Name</label>
+                <input
+                    type="text"
+                    id="contact-name"
+                    placeholder="Your Name"
+                    class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                    aria-label="Your Name"
+                >
+                <p id="contact-name-error" class="error-message hidden">Don't forget your name!</p>
+            </div>
+            <div class="mb-4"> <!-- This mb-4 helps stack elements -->
+                <label for="contact-email" class="sr-only">Your Email</label>
+                <input
+                    type="email"
+                    id="contact-email"
+                    placeholder="Your Email"
+                    class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                    aria-label="Your Email"
+                >
+                <p id="contact-email-error" class="error-message hidden">A valid email is needed.</p>
+            </div>
+            <div class="mb-4"> <!-- This mb-4 helps stack elements -->
+                <label for="contact-message" class="sr-only">Your Message</label>
+                <textarea
+                    id="contact-message"
+                    placeholder="Your Message"
+                    rows="4"
+                    class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 resize-y"
+                    aria-label="Your Message"
+                ></textarea>
+                <p id="contact-message-error" class="error-message hidden">Please type your message.</p>
+            </div>
+            <div> <!-- No mb-4 here as it's the last element before the success message -->
+                <button
+                    type="submit"
+                    id="send-message-btn"
+                    class="btn-primary w-full text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-indigo-300"
+                >
+                    Send
+                </button>
+            </div>
+            <div id="contact-success-message" class="text-green-600 mt-4 hidden">Message sent! Thanks for reaching out.</div>
+        </form>
+    </div>
+
+    <!-- Footer with copyright info -->
+    <footer class="mt-8 text-sm text-gray-500">
+        <p>Built by Tanay | Powered by WeatherAPI & Cognifyz Internship Tasks</p>
+    </footer>
+
+    <!-- Embedded JavaScript -->
+    <script>
+        // Grab all the elements we'll need from the page
+        const body = document.body;
+        const themeToggleContainer = document.getElementById('theme-toggle-container');
+        const weatherApp = document.getElementById('weather-app'); // Added for easier access
+        const contactFormSection = document.getElementById('contact-form-section'); // Added for easier access
+
+        // Weather app elements
+        const cityForm = document.getElementById('city-form');
+        const cityInput = document.getElementById('city-input');
+        const cityError = document.getElementById('city-error');
+        const getWeatherBtn = document.getElementById('get-weather-btn');
+        const weatherDisplay = document.getElementById('weather-display');
+        const displayCity = document.getElementById('display-city');
+        const displayTemp = document.getElementById('display-temp');
+        const displayCondition = document.getElementById('display-condition');
+        const displayFeelsLike = document.getElementById('display-feelslike');
+        const displayHumidity = document.getElementById('display-humidity');
+        const displayWind = document.getElementById('display-wind');
+        const displayPressure = document.getElementById('display-pressure');
+        const weatherIconDisplay = document.getElementById('weather-icon-display');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // Contact form elements
+        const contactForm = document.getElementById('contact-form');
+        const contactNameInput = document.getElementById('contact-name');
+        const contactEmailInput = document.getElementById('contact-email');
+        const contactMessageInput = document.getElementById('contact-message');
+        const contactNameError = document.getElementById('contact-name-error');
+        const contactEmailError = document.getElementById('contact-email-error');
+        const contactMessageError = document.getElementById('contact-message-error');
+        const contactSuccessMessage = document.getElementById('contact-success-message');
+
+        // WeatherAPI.com details (your key!)
+        const API_KEY = '9eccd17ecde341489fe42555252507';
+        const BASE_URL = 'https://api.weatherapi.com/v1/current.json';
+
+        /**
+         * Simple function to pick an emoji based on weather text.
+         * Makes the weather display a bit more fun!
+         * @param {string} condition - The weather description from the API.
+         * @returns {string} An emoji.
+         */
+        const getWeatherEmoji = (condition) => {
+            const lowerCaseCondition = condition.toLowerCase();
+            if (lowerCaseCondition.includes('clear') || lowerCaseCondition.includes('sunny')) return '☀️';
+            if (lowerCaseCondition.includes('cloudy') || lowerCaseCondition.includes('overcast')) return '☁️';
+            if (lowerCaseCondition.includes('rain') || lowerCaseCondition.includes('drizzle') || lowerCaseCondition.includes('shower')) return '🌧️';
+            if (lowerCaseCondition.includes('thunder')) return '⛈️';
+            if (lowerCaseCondition.includes('snow') || lowerCaseCondition.includes('sleet')) return '❄️';
+            if (lowerCaseCondition.includes('mist') || lowerCaseCondition.includes('fog') || lowerCaseCondition.includes('haze')) return '🌫️';
+            return '🌡️'; // Default thermometer
+        };
+
+        /**
+         * Fetches weather data using the WeatherAPI.com endpoint.
+         * This is where the magic happens for getting real-time data.
+         * @param {string} city - The city name to look up.
+         * @returns {Promise<Object>} Weather data or an error.
+         */
+        const fetchWeather = async (city) => {
+            const url = `${BASE_URL}?key=${API_KEY}&q=${city}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return {
+                    temp: `${Math.round(data.current.temp_c)}°C`,
+                    condition: data.current.condition.text,
+                    humidity: `${data.current.humidity}%`,
+                    feelslike: `${Math.round(data.current.feelslike_c)}°C`,
+                    wind: `${data.current.wind_kph} kph`,
+                    pressure: `${data.current.pressure_mb} mb`
+                };
+            } catch (error) {
+                console.error("Error fetching weather data:", error);
+                throw error;
+            }
+        };
+
+        /**
+         * Updates the UI with the fresh weather data.
+         * @param {string} city - The city name.
+         * @param {Object} data - The weather data object.
+         */
+        const displayWeather = (city, data) => {
+            displayCity.textContent = city.charAt(0).toUpperCase() + city.slice(1);
+            displayTemp.textContent = data.temp;
+            displayCondition.textContent = data.condition;
+            displayFeelsLike.textContent = data.feelslike;
+            displayHumidity.textContent = data.humidity;
+            displayWind.textContent = data.wind;
+            displayPressure.textContent = data.pressure;
+            weatherIconDisplay.textContent = getWeatherEmoji(data.condition);
+            weatherDisplay.classList.remove('hidden');
+        };
+
+        /**
+         * Shows an error message in the weather display area.
+         * @param {string} message - The error message to show.
+         */
+        const showError = (message) => {
+            displayCity.textContent = '';
+            displayTemp.textContent = message;
+            displayCondition.textContent = '';
+            displayFeelsLike.textContent = '';
+            displayHumidity.textContent = '';
+            displayWind.textContent = '';
+            displayPressure.textContent = '';
+            weatherIconDisplay.textContent = '❓';
+            weatherDisplay.classList.remove('hidden');
+        };
+
+        // Event listener for when the user submits the city form
+        cityForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const city = cityInput.value.trim();
+
+            if (!city) { // Shorter check for empty string
+                cityError.classList.remove('hidden');
+                weatherDisplay.classList.add('hidden');
+                loadingIndicator.classList.add('hidden');
+                weatherIconDisplay.textContent = '&#x1F324;';
+                return;
+            } else {
+                cityError.classList.add('hidden');
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            weatherDisplay.classList.add('hidden');
+
+            getWeatherBtn.textContent = 'Fetching...';
+            getWeatherBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            getWeatherBtn.classList.remove('btn-primary');
+
+            try {
+                const weatherData = await fetchWeather(city);
+                displayWeather(city, weatherData);
+            } catch (error) {
+                console.error("Failed to fetch weather:", error);
+                let errorMessage = `Couldn't get weather for "${city}".`;
+                if (error.message.includes("No matching location found")) {
+                    errorMessage = `City "${city}" not found. Double-check the spelling!`;
+                } else if (error.message.includes("API key is invalid")) {
+                    errorMessage = "API key issue! Make sure your WeatherAPI.com key is correct.";
+                } else {
+                    errorMessage = `Something went wrong: ${error.message}`;
+                }
+                showError(errorMessage);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                getWeatherBtn.textContent = 'Get Weather';
+                getWeatherBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                getWeatherBtn.classList.add('btn-primary');
+            }
+        });
+
+        // Event listener for the theme toggle switch container
+        themeToggleContainer.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+        });
+
+        // Contact Form: Basic client-side validation (no actual sending here)
+        contactForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            let isValid = true;
+
+            // Validate Name
+            if (!contactNameInput.value.trim()) { // Shorter check
+                contactNameError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                contactNameError.classList.add('hidden');
+            }
+
+            // Validate Email (simple pattern check)
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(contactEmailInput.value.trim())) {
+                contactEmailError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                contactEmailError.classList.add('hidden');
+            }
+
+            // Validate Message
+            if (!contactMessageInput.value.trim()) { // Shorter check
+                contactMessageError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                contactMessageError.classList.add('hidden');
+            }
+
+            if (isValid) {
+                console.log('Contact Form Submitted:', {
+                    name: contactNameInput.value.trim(),
+                    email: contactEmailInput.value.trim(),
+                    message: contactMessageInput.value.trim()
+                });
+                contactSuccessMessage.classList.remove('hidden');
+                contactForm.reset();
+                setTimeout(() => contactSuccessMessage.classList.add('hidden'), 3000); // Shorter timeout call
+            }
+        });
+    </script>
+</body>
+</html>
